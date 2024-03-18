@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth2').Strategy;
+const FacebookStrategy =  require('passport-facebook').Strategy;
 const { PrismaClient } = require('@prisma/client');
 const dotenv = require('dotenv');
 
@@ -59,6 +60,35 @@ passport.use(new GoogleStrategy(
         },
       });
       return done(null, newUser);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return done(error);
+    }
+  },
+));
+
+passport.use(new FacebookStrategy(
+  {
+    clientID: process.env.FACEBOOK_CLIENT_ID,
+    clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+    callbackURL: '/auth/facebook/callback',
+    passReqToCallback: true,
+  },
+  async (req, accessToken, refreshToken, profile, done) => {
+    try {
+      const existingUser = await prisma.User.findUnique({
+        where: { id: profile.id[0].value },
+      });
+      if(existingUser) {
+        console.log('User already exists');
+        return done(null, existingUser);
+      } 
+      const newUser = await prisma.User.create({
+        data: {
+          id: profile.id[0].value,
+          password: '',     
+        }           
+      });
     } catch (error) {
       console.error('Error creating user:', error);
       return done(error);
