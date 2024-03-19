@@ -76,9 +76,13 @@ passport.use(new FacebookStrategy(
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
+      const facebookId = profile.id; 
+      const userId = parseInt(facebookId); 
+
       const existingUser = await prisma.User.findUnique({
-        where: { id: profile.id[0].value },
+        where: { id: userId },
       });
+     
       if(existingUser) {
         console.log('User already exists');
         return done(null, existingUser);
@@ -86,6 +90,7 @@ passport.use(new FacebookStrategy(
       const newUser = await prisma.User.create({
         data: {
           id: profile.id[0].value,
+          email: '',
           password: '',     
         }           
       });

@@ -170,7 +170,7 @@ app.get('/auth/google/callback', passport.authenticate('google', {
   failureRedirect: '/login',
 }));
 
-app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['profile', 'id'] }));
+app.get('/auth/facebook', passport.authenticate('facebook'));
 app.get('/auth/facebook/callback', passport.authenticate('facebook', {
   successRedirect: '/users',
   failureRedirect: '/login',

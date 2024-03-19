@@ -15,7 +15,7 @@ datasource db {
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
+  id         BigInt       @id @default(autoincrement())
   username   String?   @unique
   email      String    @unique
   password   String
@@ -25,10 +25,10 @@ model User {
   receivedMessages Message[] @relation("Recipient")
 }
 model Message {
-  id              Int      @id @default(autoincrement())
+  id              BigInt      @id @default(autoincrement())
   sender          User     @relation("Sender", fields: [senderId], references: [id])
-  senderId        Int
+  senderId        BigInt
   recipient       User     @relation("Recipient", fields: [recipientId], references: [id])
-  recipientId     Int
+  recipientId     BigInt
   content         String
 }
