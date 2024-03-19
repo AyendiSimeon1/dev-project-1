@@ -4,6 +4,7 @@ const GoogleStrategy = require('passport-google-oauth2').Strategy;
 const FacebookStrategy =  require('passport-facebook').Strategy;
 const { PrismaClient } = require('@prisma/client');
 const dotenv = require('dotenv');
+const { generateUniqueEmail } = require('./generateUniqueEmail');
 
 dotenv.config();
 
@@ -67,6 +68,7 @@ passport.use(new GoogleStrategy(
   },
 ));
 
+
 passport.use(new FacebookStrategy(
   {
     clientID: process.env.FACEBOOK_CLIENT_ID,
@@ -78,6 +80,8 @@ passport.use(new FacebookStrategy(
     try {
       const facebookId = profile.id; 
       const userId = parseInt(facebookId); 
+      
+      const username = profile.username;
 
       const existingUser = await prisma.User.findUnique({
         where: { id: userId },
@@ -87,32 +91,65 @@ passport.use(new FacebookStrategy(
         console.log('User already exists');
         return done(null, existingUser);
       } 
+
+      // Generate a unique email
+      const uniqueEmail = generateUniqueEmail('user');
+
       const newUser = await prisma.User.create({
         data: {
           id: profile.id[0].value,
-          email: '',
-          password: '',     
+          email:  profile.emails[0].value,
+          password: '', 
+          username:  profile.username,
+
         }           
       });
+
+      return done(null, newUser);
     } catch (error) {
-      console.error('Error creating user:', error);
-      return done(error);
+      if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+        console.error('Email already exists:', error);
+        
+      } else {
+        // Handle other errors
+        console.error('Error creating user:', error);
+      }
     }
-  },
-));
+}));
+
 
 // Passport Serializer
+const customSerialize = (sessionData) => {
+  const serializedData = { ...sessionData };
+  // Convert BigInt values to strings
+  if (serializedData.id) {
+    serializedData.id = serializedData.id.toString();
+  }
+  // Add more conversions if needed
+  return JSON.stringify(serializedData);
+};
+
+// Custom deserialization function to convert strings back to BigInt values
+const customDeserialize = (serializedData) => {
+  const sessionData = JSON.parse(serializedData);
+  // Convert strings back to BigInt values
+  if (sessionData.id) {
+    sessionData.id = BigInt(sessionData.id);
+  }
+  // Add more conversions if needed
+  return sessionData;
+};
+
 passport.serializeUser((user, done) => {
-  done(null, user.id);
+  // Serialize the user with custom serialization
+  const serializedUser = customSerialize(user);
+  done(null, serializedUser);
 });
 
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await prisma.user.findUnique({ where: { id } });
-    done(null, user);
-  } catch (error) {
-    done(error);
-  }
+passport.deserializeUser((serializedUser, done) => {
+  // Deserialize the user with custom deserialization
+  const user = customDeserialize(serializedUser);
+  done(null, user);
 });
 
 module.exports = { hashPassword, comparePassword, passport };

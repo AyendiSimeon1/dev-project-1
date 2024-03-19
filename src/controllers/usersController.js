@@ -123,12 +123,19 @@ const getUsers = async (req, res) => {
         },
       },
     });
-    return res.status(200).json(users);
+
+    // Convert BigInt values to strings
+    const usersWithoutBigInt = users.map(user => ({
+      ...user,
+      id: String(user.id), // Convert the 'id' field to a string
+      // Add more fields to convert if necessary
+    }));
+
+    return res.status(200).json(usersWithoutBigInt);
   } catch (error) {
     return res.status(400).json({ Error: error.message });
   }
 };
-
 module.exports = {
   registerUser,
   loginUser,
