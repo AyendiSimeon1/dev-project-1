@@ -124,11 +124,9 @@ const getUsers = async (req, res) => {
       },
     });
 
-    // Convert BigInt values to strings
     const usersWithoutBigInt = users.map(user => ({
       ...user,
-      id: String(user.id), // Convert the 'id' field to a string
-      // Add more fields to convert if necessary
+      id: String(user.id), 
     }));
 
     return res.status(200).json(usersWithoutBigInt);

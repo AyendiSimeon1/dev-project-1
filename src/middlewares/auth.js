@@ -92,16 +92,14 @@ passport.use(new FacebookStrategy(
         return done(null, existingUser);
       } 
 
-      // Generate a unique email
       const uniqueEmail = generateUniqueEmail('user');
 
       const newUser = await prisma.User.create({
         data: {
           id: profile.id[0].value,
-          email:  profile.emails[0].value,
+          email:  uniqueEmail,
           password: '', 
           username:  profile.username,
-
         }           
       });
 
@@ -109,9 +107,7 @@ passport.use(new FacebookStrategy(
     } catch (error) {
       if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
         console.error('Email already exists:', error);
-        
       } else {
-        // Handle other errors
         console.error('Error creating user:', error);
       }
     }
@@ -121,33 +117,29 @@ passport.use(new FacebookStrategy(
 // Passport Serializer
 const customSerialize = (sessionData) => {
   const serializedData = { ...sessionData };
-  // Convert BigInt values to strings
   if (serializedData.id) {
     serializedData.id = serializedData.id.toString();
   }
-  // Add more conversions if needed
   return JSON.stringify(serializedData);
 };
 
-// Custom deserialization function to convert strings back to BigInt values
+
 const customDeserialize = (serializedData) => {
   const sessionData = JSON.parse(serializedData);
   // Convert strings back to BigInt values
   if (sessionData.id) {
     sessionData.id = BigInt(sessionData.id);
   }
-  // Add more conversions if needed
+
   return sessionData;
 };
 
 passport.serializeUser((user, done) => {
-  // Serialize the user with custom serialization
   const serializedUser = customSerialize(user);
   done(null, serializedUser);
 });
 
 passport.deserializeUser((serializedUser, done) => {
-  // Deserialize the user with custom deserialization
   const user = customDeserialize(serializedUser);
   done(null, user);
 });
